@@ -1,0 +1,16 @@
+{
+    "watch": [
+        "libs",
+        "apps",
+        ".yalc/@kodus/flow",
+        ".yalc/@kodus/kodus-common"
+    ],
+    "ext": "ts,js,json",
+    "ignore": [
+        "dist",
+        "node_modules",
+        "**/*.spec.ts"
+    ],
+    "signal": "SIGTERM",
+    "delay": "2500"
+}

@@ -1,0 +1,17 @@
+node_modules
+dist
+.dockerignore
+Dockerfile*
+DockerFiles
+docker-compose*.yml
+.git
+.github
+.husky
+.vscode
+.idea
+*.md
+coverage
+test
+*.log
+.env*
+.build_cache
