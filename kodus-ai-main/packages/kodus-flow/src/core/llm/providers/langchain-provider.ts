@@ -8,7 +8,7 @@ import {
 } from '../../../core/types/allTypes.js';
 import { createLogger } from '../../../observability/index.js';
 import { EngineError } from '../../errors.js';
-import { normalizeLLMContent } from '../normalizers.js';
+import { normalizeLLMContent, stripThinkingBlocks } from '../normalizers.js';
 
 type OpenAIToolDefinition = {
     type: 'function';
@@ -55,9 +55,9 @@ export interface LLMOptions {
         parameters: Record<string, unknown>;
     }>;
     toolChoice?:
-        | 'auto'
-        | 'none'
-        | { type: 'function'; function: { name: string } };
+    | 'auto'
+    | 'none'
+    | { type: 'function'; function: { name: string } };
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -189,7 +189,7 @@ export class LangChainProvider implements LLMProvider {
         return messages.map((msg) => {
             const base: Record<string, unknown> = {
                 role: msg.role,
-                content: msg.content,
+                content: stripThinkingBlocks(msg.content),
                 name: msg.name,
             };
             if (msg.toolCalls) {
@@ -207,13 +207,13 @@ export class LangChainProvider implements LLMProvider {
 
         const tools: OpenAIToolDefinition[] | undefined = options.tools?.length
             ? options.tools.map((tool) => ({
-                  type: 'function',
-                  function: {
-                      name: tool.name,
-                      description: tool.description,
-                      parameters: tool.parameters,
-                  },
-              }))
+                type: 'function',
+                function: {
+                    name: tool.name,
+                    description: tool.description,
+                    parameters: tool.parameters,
+                },
+            }))
             : undefined;
 
         const payload: LangChainOptions = {
@@ -290,13 +290,13 @@ export class LangChainProvider implements LLMProvider {
             (record as { toolCalls?: unknown }).toolCalls ??
             (
                 record['additional_kwargs'] as
-                    | Record<string, unknown>
-                    | undefined
+                | Record<string, unknown>
+                | undefined
             )?.['tool_calls'] ??
             (
                 record['additionalKwargs'] as
-                    | Record<string, unknown>
-                    | undefined
+                | Record<string, unknown>
+                | undefined
             )?.['tool_calls'];
 
         if (!Array.isArray(raw)) return undefined;
@@ -414,8 +414,8 @@ export class LangChainProvider implements LLMProvider {
             legacyUsage && typeof legacyUsage === 'object'
                 ? legacyUsage
                 : additionalUsage && typeof additionalUsage === 'object'
-                  ? additionalUsage
-                  : undefined;
+                    ? additionalUsage
+                    : undefined;
 
         if (finalUsage) {
             const u = finalUsage as {

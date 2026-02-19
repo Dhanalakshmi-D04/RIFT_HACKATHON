@@ -4,7 +4,7 @@ import {
     markSpanOk,
     applyErrorToSpan,
 } from '../../observability/index.js';
-import { normalizeLLMContent } from './normalizers.js';
+import { normalizeLLMContent, stripThinkingBlocks } from './normalizers.js';
 import {
     SPAN_NAMES,
     createLLMCallSpan,
@@ -100,7 +100,6 @@ export class DirectLLMAdapter implements LLMAdapter {
                 typeof context?.maxTokens === 'number'
                     ? context?.maxTokens
                     : 20000,
-            maxReasoningTokens: context?.maxReasoningTokens,
             stop: context?.stop ?? DEFAULT_LLM_SETTINGS.stop,
         };
 
@@ -326,7 +325,7 @@ export class DirectLLMAdapter implements LLMAdapter {
     async call(request: LLMRequest): Promise<LLMResponse> {
         const messages: LangChainMessage[] = request.messages.map((msg) => ({
             role: msg.role,
-            content: msg.content,
+            content: stripThinkingBlocks(msg.content),
         }));
 
         const options: LangChainOptions = {
@@ -335,7 +334,6 @@ export class DirectLLMAdapter implements LLMAdapter {
             temperature:
                 request.temperature ?? DEFAULT_LLM_SETTINGS.temperature,
             maxTokens: request.maxTokens ?? DEFAULT_LLM_SETTINGS.maxTokens,
-            maxReasoningTokens: request.maxReasoningTokens,
             stop: request.stop ?? DEFAULT_LLM_SETTINGS.stop,
             signal: request.signal,
         };
@@ -406,7 +404,7 @@ export class DirectLLMAdapter implements LLMAdapter {
                                 usageObj.totalTokens ??
                                 usageObj.total_tokens ??
                                 (typeof promptTokens === 'number' &&
-                                typeof completionTokens === 'number'
+                                    typeof completionTokens === 'number'
                                     ? promptTokens + completionTokens
                                     : undefined);
 
@@ -522,13 +520,13 @@ export class DirectLLMAdapter implements LLMAdapter {
             (record as { toolCalls?: unknown }).toolCalls ??
             (
                 record['additional_kwargs'] as
-                    | Record<string, unknown>
-                    | undefined
+                | Record<string, unknown>
+                | undefined
             )?.['tool_calls'] ??
             (
                 record['additionalKwargs'] as
-                    | Record<string, unknown>
-                    | undefined
+                | Record<string, unknown>
+                | undefined
             )?.['tool_calls'];
 
         if (!Array.isArray(raw)) {

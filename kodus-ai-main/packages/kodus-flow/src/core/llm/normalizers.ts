@@ -15,6 +15,29 @@ const extractTextFromBlocks = (blocks: unknown[]): string => {
         .join('');
 };
 
+export function stripThinkingBlocks(content: unknown): string {
+    if (typeof content === 'string') {
+        // Handle simple text thinking formats if any (e.g. <thinking>...</thinking>)
+        return content.replace(/<(thinking|reasoning)>[\s\S]*?<\/\1>/gi, '').trim();
+    }
+
+    if (Array.isArray(content)) {
+        return extractTextFromBlocks(content);
+    }
+
+    if (content && typeof content === 'object') {
+        const c = content as Record<string, unknown>;
+        if (Array.isArray(c.content)) {
+            return extractTextFromBlocks(c.content);
+        }
+        if (typeof c.content === 'string') {
+            return c.content.replace(/<(thinking|reasoning)>[\s\S]*?<\/\1>/gi, '').trim();
+        }
+    }
+
+    return normalizeLLMContent(content);
+}
+
 export function normalizeLLMContent(content: unknown): string {
     if (typeof content === 'string') return content;
 

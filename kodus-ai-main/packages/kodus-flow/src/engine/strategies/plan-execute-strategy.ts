@@ -39,7 +39,6 @@ export class PlanExecuteStrategy extends BaseExecutionStrategy {
         model?: string;
         temperature?: number;
         maxTokens?: number;
-        maxReasoningTokens?: number;
         stop?: string[];
     };
 
@@ -229,7 +228,6 @@ export class PlanExecuteStrategy extends BaseExecutionStrategy {
                     model: this.llmDefaults?.model,
                     temperature: this.llmDefaults?.temperature,
                     maxTokens: this.llmDefaults?.maxTokens,
-                    maxReasoningTokens: this.llmDefaults?.maxReasoningTokens,
                     stop: this.llmDefaults?.stop,
                     signal: context.agentContext?.signal,
                 }),
@@ -331,7 +329,7 @@ export class PlanExecuteStrategy extends BaseExecutionStrategy {
                             getObservability().getContext()?.correlationId,
                     });
                 }
-            } catch {}
+            } catch { }
             executedSteps.push(stepResult);
 
             if (
@@ -426,7 +424,7 @@ export class PlanExecuteStrategy extends BaseExecutionStrategy {
                             getObservability().getContext()?.correlationId,
                     });
                 }
-            } catch {}
+            } catch { }
 
             if (step.metadata) {
                 step.metadata.success = false;
@@ -509,7 +507,7 @@ export class PlanExecuteStrategy extends BaseExecutionStrategy {
                         getObservability().getContext()?.correlationId,
                 });
             }
-        } catch {}
+        } catch { }
 
         return {
             type: 'tool_result',
@@ -732,7 +730,7 @@ export class PlanExecuteStrategy extends BaseExecutionStrategy {
                 },
                 agentContext: context.agentContext,
                 isComplete: true,
-                update: () => {},
+                update: () => { },
                 getCurrentSituation: () =>
                     `Plan-Execute strategy completed for: ${context.input}`,
                 getFinalResult: () => ({

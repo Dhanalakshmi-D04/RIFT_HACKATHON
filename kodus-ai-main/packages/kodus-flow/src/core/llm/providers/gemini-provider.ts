@@ -5,6 +5,7 @@ import {
     LLMMessage,
     LLMResponse,
 } from '../../../core/types/allTypes.js';
+import { stripThinkingBlocks } from '../normalizers.js';
 
 // Simple provider interface for legacy providers
 export interface LLMProvider {
@@ -31,9 +32,9 @@ export interface LLMOptions {
         parameters: Record<string, unknown>;
     }>;
     toolChoice?:
-        | 'auto'
-        | 'none'
-        | { type: 'function'; function: { name: string } };
+    | 'auto'
+    | 'none'
+    | { type: 'function'; function: { name: string } };
 }
 
 export interface GeminiConfig {
@@ -169,14 +170,14 @@ export class GeminiProvider implements LLMProvider {
                         content: text,
                         usage: chunk.usageMetadata
                             ? {
-                                  promptTokens:
-                                      chunk.usageMetadata.promptTokenCount || 0,
-                                  completionTokens:
-                                      chunk.usageMetadata
-                                          .candidatesTokenCount || 0,
-                                  totalTokens:
-                                      chunk.usageMetadata.totalTokenCount || 0,
-                              }
+                                promptTokens:
+                                    chunk.usageMetadata.promptTokenCount || 0,
+                                completionTokens:
+                                    chunk.usageMetadata
+                                        .candidatesTokenCount || 0,
+                                totalTokens:
+                                    chunk.usageMetadata.totalTokenCount || 0,
+                            }
                             : undefined,
                     };
                 }
@@ -201,11 +202,11 @@ export class GeminiProvider implements LLMProvider {
             .map((msg) => {
                 switch (msg.role) {
                     case AgentInputEnum.SYSTEM:
-                        return `SYSTEM: ${msg.content}`;
+                        return `SYSTEM: ${stripThinkingBlocks(msg.content)}`;
                     case AgentInputEnum.USER:
-                        return `USER: ${msg.content}`;
+                        return `USER: ${stripThinkingBlocks(msg.content)}`;
                     case AgentInputEnum.ASSISTANT:
-                        return `ASSISTANT: ${msg.content}`;
+                        return `ASSISTANT: ${stripThinkingBlocks(msg.content)}`;
                     default:
                         return msg.content;
                 }
