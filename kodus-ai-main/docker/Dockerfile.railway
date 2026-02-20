@@ -1,5 +1,11 @@
 # =============================================================================
-# Railway-compatible Dockerfile for kodus-ai backend services (Yarn 4 Ready)
+# Railway-compatible Dockerfile for kodus-ai backend services.
+#
+# Railway doesn't support Docker --target, so this Dockerfile uses a build arg
+# SERVICE_TYPE to select which service to run (api, worker, webhooks).
+#
+# Each Railway service should set the variable:
+#   SERVICE_TYPE=api | worker | webhooks
 # =============================================================================
 
 FROM docker.io/library/node:22.22.0-slim AS base
@@ -12,37 +18,37 @@ ENV API_CLOUD_MODE=${API_CLOUD_MODE}
 ENV API_DEVELOPMENT_MODE=false
 ENV SENTRY_RELEASE=${RELEASE_VERSION}
 
-# Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
   ca-certificates git python3 make g++ procps \
   && rm -rf /var/lib/apt/lists/*
 
-# CHANGE 1: Enable Corepack to use Yarn 4 (matches your local machine)
-RUN corepack enable && corepack prepare yarn@4.12.0 --activate
+RUN corepack disable \
+  && npm i -g yarn@1.22.22
 
 FROM base AS deps
-# CHANGE 2: Copy Yarn 4 config files and the lockfile
-COPY .yarnrc.yml package.json yarn.lock .npmrc ./
-COPY .yarn ./.yarn 
+COPY package.json yarn.lock .npmrc ./
 COPY packages/kodus-common ./packages/kodus-common
 COPY packages/kodus-flow ./packages/kodus-flow
 
-# CHANGE 3: Use Yarn 4's --immutable flag (the new --frozen-lockfile)
-RUN yarn install --immutable
+# Build local packages first
+RUN cd packages/kodus-common && yarn install && yarn prepack
+RUN cd packages/kodus-flow && yarn install && yarn build
 
-# Build local packages
-RUN cd packages/kodus-common && yarn build
-RUN cd packages/kodus-flow && yarn build
+# Install dependencies and link local packages
+RUN yarn install --frozen-lockfile
+RUN rm -rf node_modules/@kodus/kodus-common && cp -r packages/kodus-common node_modules/@kodus/kodus-common
+RUN rm -rf node_modules/@kodus/flow && cp -r packages/kodus-flow node_modules/@kodus/flow
 
 FROM deps AS build
 ARG API_CLOUD_MODE=false
 ENV API_CLOUD_MODE=${API_CLOUD_MODE}
+
 ARG RELEASE_VERSION=local
 ENV SENTRY_RELEASE=$RELEASE_VERSION
 
 COPY . .
 
-# Environment generation
+# Generate environment.ts by replacing placeholders and removing declaration lines
 RUN sed -e "s/__CLOUD_MODE__/${API_CLOUD_MODE}/g" \
   -e "s/__DEVELOPMENT_MODE__/false/g" \
   -e "/declare const/d" \
@@ -50,17 +56,22 @@ RUN sed -e "s/__CLOUD_MODE__/${API_CLOUD_MODE}/g" \
 
 RUN yarn build:apps && yarn build:migrations
 
-# Production dependencies stage
+# Install production dependencies only
 FROM base AS prod-deps
-COPY .yarnrc.yml package.json yarn.lock .npmrc ./
-COPY .yarn ./.yarn
+COPY package.json yarn.lock .npmrc ./
 COPY packages/kodus-common ./packages/kodus-common
 COPY packages/kodus-flow ./packages/kodus-flow
 
-# CHANGE 4: Use modern Yarn 'workspaces focus' for a smaller production image
-RUN yarn workspaces focus --all --production && yarn cache clean
+# Build local packages first
+RUN cd packages/kodus-common && yarn install && yarn prepack
+RUN cd packages/kodus-flow && yarn install && yarn build
 
-# Runtime stage
+# Install dependencies and link local packages
+RUN yarn install --frozen-lockfile && yarn cache clean
+RUN rm -rf node_modules/@kodus/kodus-common && cp -r packages/kodus-common node_modules/@kodus/kodus-common
+RUN rm -rf node_modules/@kodus/flow && cp -r packages/kodus-flow node_modules/@kodus/flow
+
+# Runtime stage — single stage, service selected via SERVICE_TYPE
 FROM docker.io/library/node:22.22.0-slim
 WORKDIR /usr/src/app
 ENV NODE_ENV=production
