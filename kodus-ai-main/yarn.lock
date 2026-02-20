@@ -1802,7 +1802,7 @@ __metadata:
 
 "@kodus/flow@file:./packages/kodus-flow::locator=kodus-orchestrator%40workspace%3A.":
   version: 0.1.41
-  resolution: "@kodus/flow@file:./packages/kodus-flow#./packages/kodus-flow::hash=2323a2&locator=kodus-orchestrator%40workspace%3A."
+  resolution: "@kodus/flow@file:./packages/kodus-flow#./packages/kodus-flow::hash=05f290&locator=kodus-orchestrator%40workspace%3A."
   dependencies:
     "@google/generative-ai": "npm:^0.24.1"
     "@modelcontextprotocol/sdk": "npm:^1.26.0"
@@ -1823,7 +1823,7 @@ __metadata:
   peerDependenciesMeta:
     "@opentelemetry/api":
       optional: true
-  checksum: 10c0/cb4712ecfed9618bc925f3fe1cc0f7ed2aaff1ab59925e2343742948a1e287320eb6d7f651e097a25be4302159bff7da0bccff864567aea9aa4df5f13c2bc598
+  checksum: 10c0/86db126e99282491a9188379fbbc66ae795ebafb469c7ce90d0d9a3d0352467dc059662c1a6cfa3db304765c161f542212b483e68eeae7fbb8424c98ada9ca88
   languageName: node
   linkType: hard
 
