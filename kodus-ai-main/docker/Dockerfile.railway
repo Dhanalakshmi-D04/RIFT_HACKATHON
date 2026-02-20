@@ -17,20 +17,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   ca-certificates git python3 make g++ procps \
   && rm -rf /var/lib/apt/lists/*
 
-# FIX 1: Enable Corepack to use Yarn 4 (matching your local version)
+# CHANGE 1: Enable Corepack to use Yarn 4 (matches your local machine)
 RUN corepack enable && corepack prepare yarn@4.12.0 --activate
 
 FROM base AS deps
-# FIX 2: Copy Yarn 4 config files along with package/lock
+# CHANGE 2: Copy Yarn 4 config files and the lockfile
 COPY .yarnrc.yml package.json yarn.lock .npmrc ./
-COPY .yarn ./.yarn
+COPY .yarn ./.yarn 
 COPY packages/kodus-common ./packages/kodus-common
 COPY packages/kodus-flow ./packages/kodus-flow
 
-# FIX 3: Use Yarn 4 --immutable (replaces --frozen-lockfile)
+# CHANGE 3: Use Yarn 4's --immutable flag (the new --frozen-lockfile)
 RUN yarn install --immutable
 
-# Build local packages 
+# Build local packages
 RUN cd packages/kodus-common && yarn build
 RUN cd packages/kodus-flow && yarn build
 
@@ -57,7 +57,7 @@ COPY .yarn ./.yarn
 COPY packages/kodus-common ./packages/kodus-common
 COPY packages/kodus-flow ./packages/kodus-flow
 
-# FIX 4: Use Yarn 4 way to install production-only dependencies
+# CHANGE 4: Use modern Yarn 'workspaces focus' for a smaller production image
 RUN yarn workspaces focus --all --production && yarn cache clean
 
 # Runtime stage
